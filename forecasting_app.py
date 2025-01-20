@@ -1,3 +1,7 @@
+#===================================================#
+# Eric Daudrix - Lycée Monnerville Cahors - CMQE IF #
+#===================================================#
+
 import streamlit as st
 import pandas as pd
 import numpy as np
