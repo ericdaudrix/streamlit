@@ -64,7 +64,7 @@ if uploaded_file:
         fig.add_trace(go.Scatter(x=predictions.index, y=predictions.values, mode='lines', name='Predictions', line=dict(color='red')))
         fig.update_layout(title="Predictions vs Actual", xaxis_title="Date", yaxis_title="Value")
         st.plotly_chart(fig, use_container_width=True)
-    if st.button1("Train Model multistep"):
+    
         
 
 
