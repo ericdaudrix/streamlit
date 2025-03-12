@@ -26,7 +26,7 @@ uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
 
 if uploaded_file:
     # Load data
-    data = pd.read_csv(uploaded_file)
+    data = pd.read_csv(uploaded_file, sep=';')
     st.write("Data Preview:", data.head())
 
     # Data preparation
