@@ -96,16 +96,7 @@ if uploaded_file:
         )
         st.plotly_chart(fig, use_container_width=True)
 
-        # Évaluation
-        y_true = test['y'][:pred_steps]
-        y_pred = predictions[:len(y_true)]
-        mae = mean_absolute_error(y_true, y_pred)
-        rmse = mean_squared_error(y_true, y_pred, squared=False)
-
-        st.subheader("📐 Évaluation du modèle")
-        col1, col2 = st.columns(2)
-        col1.metric("MAE", f"{mae:.2f}")
-        col2.metric("RMSE", f"{rmse:.2f}")
+        
 
         # Téléchargement des prédictions
         result_df = pd.DataFrame({'date': predictions.index, 'prediction': predictions.values})
