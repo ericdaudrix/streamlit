@@ -9,6 +9,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from skforecast.recursive import ForecasterRecursive
 import plotly.graph_objects as go
+from datetime import datetime
 
 # Streamlit App Configuration
 st.set_page_config(page_title="Forecasting App", layout="wide")
@@ -34,25 +35,27 @@ if uploaded_file:
         st.error(f"❌ Erreur de lecture du fichier : {e}")
         st.stop()
 
-    # Choix des colonnes
-    columns = data.columns.tolist()
-    date_col = st.sidebar.selectbox("🗓️ Colonne de date", options=columns, index=0)
-    target_col = st.sidebar.selectbox("🎯 Colonne cible", options=columns, index=1)
+    # Récupération du nom du fichier (sans .csv)
+    filename = uploaded_file.name.replace(".csv", "")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Utilisation des deux premières colonnes
+    date_col = data.columns[0]
+    target_col = data.columns[1]
+    data.rename(columns={date_col: 'date', target_col: 'y'}, inplace=True)
 
     # Préparation des données
-    data.rename(columns={date_col: 'date', target_col: 'y'}, inplace=True)
     data['date'] = pd.to_datetime(data['date'])
     data.set_index('date', inplace=True)
     data = data.asfreq(f'{data_freq}s')
+    data = data.interpolate()
 
+    # Aperçu des données
     with st.expander("🔍 Aperçu des données brutes"):
         st.write(data.head())
 
     with st.expander("📊 Statistiques de la série"):
         st.write(data.describe())
-
-    # Interpolation des valeurs manquantes
-    data = data.interpolate()
 
     # Split train/test
     train = data[:-steps]
@@ -62,7 +65,6 @@ if uploaded_file:
         # Modélisation
         forecaster = ForecasterRecursive(regressor=LinearRegression(), lags=lags)
         forecaster.fit(y=train['y'])
-
         st.success("✅ Modèle entraîné avec succès !")
 
         # Prédictions
@@ -73,7 +75,11 @@ if uploaded_file:
         fig.add_trace(go.Scatter(x=train.index, y=train['y'], mode='lines', name='Train', line=dict(color='green')))
         fig.add_trace(go.Scatter(x=test.index, y=test['y'], mode='lines', name='Test', line=dict(color='blue')))
         fig.add_trace(go.Scatter(x=predictions.index, y=predictions.values, mode='lines', name='Prédictions', line=dict(color='red')))
-        fig.update_layout(title="Prédictions vs Réalité", xaxis_title="Date", yaxis_title="Valeur")
+        fig.update_layout(
+            title=f"Prédictions vs Réalité — {filename}",
+            xaxis_title="Date",
+            yaxis_title="Valeur"
+        )
         st.plotly_chart(fig, use_container_width=True)
 
         # Évaluation
@@ -90,4 +96,9 @@ if uploaded_file:
         # Téléchargement CSV des prédictions
         result_df = pd.DataFrame({'date': predictions.index, 'prediction': predictions.values})
         csv = result_df.to_csv(index=False).encode('utf-8')
-        st.download_button("📥 Télécharger les prédictions", data=csv, file_name='predictions.csv', mime='text/csv')
+        st.download_button(
+            label="📥 Télécharger les prédictions",
+            data=csv,
+            file_name=f'predictions_{filename}_{timestamp}.csv',
+            mime='text/csv'
+        )
