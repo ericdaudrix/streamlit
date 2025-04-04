@@ -5,6 +5,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import csv
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from skforecast.recursive import ForecasterRecursive
@@ -27,7 +28,12 @@ uploaded_file = st.file_uploader("📁 Charger un fichier CSV", type=["csv"])
 
 if uploaded_file:
     try:
-        data = pd.read_csv(uploaded_file, sep=';')
+        # Détection automatique du séparateur
+        sample = uploaded_file.read(1024).decode('utf-8')
+        uploaded_file.seek(0)  # Revenir au début du fichier
+        dialect = csv.Sniffer().sniff(sample, delimiters=";,")
+        data = pd.read_csv(uploaded_file, sep=dialect.delimiter)
+
         if data.shape[1] < 2:
             st.error("❌ Le fichier CSV doit contenir au moins deux colonnes (date, valeur).")
             st.stop()
@@ -35,11 +41,11 @@ if uploaded_file:
         st.error(f"❌ Erreur de lecture du fichier : {e}")
         st.stop()
 
-    # Récupération du nom du fichier (sans .csv)
+    # Nom du fichier et horodatage
     filename = uploaded_file.name.replace(".csv", "")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Utilisation des deux premières colonnes
+    # Utilisation automatique des deux premières colonnes
     date_col = data.columns[0]
     target_col = data.columns[1]
     data.rename(columns={date_col: 'date', target_col: 'y'}, inplace=True)
@@ -50,7 +56,7 @@ if uploaded_file:
     data = data.asfreq(f'{data_freq}s')
     data = data.interpolate()
 
-    # Aperçu des données
+    # Aperçu
     with st.expander("🔍 Aperçu des données brutes"):
         st.write(data.head())
 
@@ -70,7 +76,7 @@ if uploaded_file:
         # Prédictions
         predictions = forecaster.predict(steps=pred_steps)
 
-        # Affichage des courbes
+        # Affichage graphique
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=train.index, y=train['y'], mode='lines', name='Train', line=dict(color='green')))
         fig.add_trace(go.Scatter(x=test.index, y=test['y'], mode='lines', name='Test', line=dict(color='blue')))
@@ -93,12 +99,12 @@ if uploaded_file:
         col1.metric("MAE", f"{mae:.2f}")
         col2.metric("RMSE", f"{rmse:.2f}")
 
-        # Téléchargement CSV des prédictions
+        # Téléchargement des prédictions
         result_df = pd.DataFrame({'date': predictions.index, 'prediction': predictions.values})
-        csv = result_df.to_csv(index=False).encode('utf-8')
+        csv_out = result_df.to_csv(index=False).encode('utf-8')
         st.download_button(
             label="📥 Télécharger les prédictions",
-            data=csv,
+            data=csv_out,
             file_name=f'predictions_{filename}_{timestamp}.csv',
             mime='text/csv'
         )
