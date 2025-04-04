@@ -28,15 +28,23 @@ uploaded_file = st.file_uploader("📁 Charger un fichier CSV", type=["csv"])
 
 if uploaded_file:
     try:
-        # Détection automatique du séparateur
+        # Détection du séparateur
         sample = uploaded_file.read(1024).decode('utf-8')
-        uploaded_file.seek(0)  # Revenir au début du fichier
+        uploaded_file.seek(0)
         dialect = csv.Sniffer().sniff(sample, delimiters=";,")
+        uploaded_file.seek(0)
         data = pd.read_csv(uploaded_file, sep=dialect.delimiter)
+
+        # Vérification que le parsing a réussi
+        if data.shape[1] < 2:
+            st.warning(f"⚠️ Séparateur détecté : '{dialect.delimiter}' — tentative de relecture avec ','")
+            uploaded_file.seek(0)
+            data = pd.read_csv(uploaded_file, sep=',')
 
         if data.shape[1] < 2:
             st.error("❌ Le fichier CSV doit contenir au moins deux colonnes (date, valeur).")
             st.stop()
+
     except Exception as e:
         st.error(f"❌ Erreur de lecture du fichier : {e}")
         st.stop()
@@ -82,7 +90,7 @@ if uploaded_file:
         fig.add_trace(go.Scatter(x=test.index, y=test['y'], mode='lines', name='Test', line=dict(color='blue')))
         fig.add_trace(go.Scatter(x=predictions.index, y=predictions.values, mode='lines', name='Prédictions', line=dict(color='red')))
         fig.update_layout(
-            title=f"Prédictions vs Réalité — {filename}",
+            title=f"📊 Prédictions vs Réalité — {filename}",
             xaxis_title="Date",
             yaxis_title="Valeur"
         )
