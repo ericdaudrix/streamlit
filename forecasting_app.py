@@ -50,8 +50,8 @@ if uploaded_file:
         st.stop()
 
     # Nom du fichier et horodatage
-    filename = uploaded_file.name.replace(".csv", "")
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    #filename = uploaded_file.name.replace(".csv", "")
+    #timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # Utilisation automatique des deux premières colonnes
     date_col = data.columns[0]
